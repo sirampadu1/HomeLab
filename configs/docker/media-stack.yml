@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  # Plex Media Server
+  plex:
+    image: plexinc/pms-docker:latest
+    container_name: plex
+    network_mode: host
+    privileged: true  # Required for GPU/libusb access
+    environment:
+      - TZ=America/New_York
+      - PLEX_UID=1000
+      - PLEX_GID=1000
+      - PLEX_CLAIM=  # Get from plex.tv/claim
+    devices:
+      - /dev/dri:/dev/dri  # Intel Iris Xe GPU passthrough
+    volumes:
+      - ~/docker-data/plex:/config
+      - /mnt/synology/media:/media
+      - /tmp/plex-transcode:/transcode
+    restart: unless-stopped
+
+  # Jellyfin Media Server
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ~/docker-data/jellyfin/config:/config
+      - ~/docker-data/jellyfin/cache:/cache
+      - /mnt/synology/media:/media:ro
+    restart: unless-stopped
+
+  # Overseerr - Request Management
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=America/New_York
+    ports:
+      - 5055:5055
+    volumes:
+      - ~/docker-data/overseerr:/app/config
+    restart: unless-stopped
+
+  # Radarr - Movie Automation
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ~/docker-data/radarr:/config
+      - /mnt/synology/media:/media
+      - /mnt/synology/downloads:/downloads
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+
+  # Sonarr - TV Automation
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ~/docker-data/sonarr:/config
+      - /mnt/synology/media:/media
+      - /mnt/synology/downloads:/downloads
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+
+  # Prowlarr - Indexer Management
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ~/docker-data/prowlarr:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+
+  # SABnzbd - Usenet Downloader
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ~/docker-data/sabnzbd:/config
+      - /mnt/synology/downloads:/downloads
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+
+  # qBittorrent - Torrent Client
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - WEBUI_PORT=8090
+    volumes:
+      - ~/docker-data/qbittorrent:/config
+      - /mnt/synology/downloads:/downloads
+    ports:
+      - 8090:8090
+    restart: unless-stopped
+
+  # Tautulli - Plex Monitoring
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ~/docker-data/tautulli:/config
+    ports:
+      - 8181:8181
+    restart: unless-stopped
